@@ -8,14 +8,9 @@ namespace EnablingTests
     {
         class Simple_Texture : public D3D12MultithreadedTest
         {
-        public:
+        public:			
             struct Parameters
-            {
-                // [AR-BEFORE-COMMIT] Put your parameters here
-
-                uint a;
-                uint b;
-                uint c;
+            {                
             };
 
             static void RegisterCases(TestGroup* group);
@@ -38,10 +33,9 @@ namespace EnablingTests
             std::wstring GetTestCaseShortName() override;
             std::wstring GetTestCaseDescription() override;
 
-        private:
-		//protected:
+        private:		
             Parameters parameters;
-			//const float4 constantBufferColor;
+			const float4 constantBufferColor;
 
             SF2::D3D12::CommandQueue* defaultCommandQueue;
             SF2::D3D12::CommandAllocator* graphicsCommandAllocator;
@@ -51,21 +45,24 @@ namespace EnablingTests
 
             SF2::D3D12::DescriptorHeap* shaderResourceDescriptorHeap;
 			SF2::D3D12::DescriptorHeap* samplerDescriptorHeap;
-			//SF2::D3D12::DescriptorHeap* constantBufferDescriptorHeap;
+			SF2::D3D12::DescriptorHeap* constantBufferDescriptorHeap;
 
             SF2::D3D12::Resource* uploadHeap;
             SF2::D3D12::Resource* shaderResource;
 			SF2::D3D12::Resource* vertexBufferHeap;
-			//SF2::D3D12::ConstantBufferView constantBufferView;
+			SF2::D3D12::ConstantBufferView constantBufferView;
 
 			std::shared_ptr<SF2::D3D12::UploadHeapRegion> vertexBufferRegion;
 			std::shared_ptr<SF2::D3D12::UploadHeapRegion> shaderResourceTexture2DRegion;
 			std::shared_ptr<SF2::D3D12::UploadHeapRegion> shaderResourceRegion;
-			//std::shared_ptr<SF2::D3D12::UploadHeapRegion> constantBufferRegion;
+			std::shared_ptr<SF2::D3D12::UploadHeapRegion> constantBufferRegion;
 			
 			std::unique_ptr<SF2::Texture2DData<byte4>> texture2DData;
             std::shared_ptr<SF2::D3D12::VertexBuffer> vertexBuffer;
-            //std::shared_ptr<SF2::Subresource<byte4>> texture2DData;       
+            //std::shared_ptr<SF2::Subresource<byte4>> texture2DData; 
+
+			SF2::D3D12::ShaderResourceView shaderResourceView;
+			SF2::D3D12::Sampler sampler;
         };
     }
 }
