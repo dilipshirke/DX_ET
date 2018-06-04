@@ -7,8 +7,9 @@ using namespace SF2::D3D12;
 namespace EnablingTests
 {
     namespace D3D12
-    {
-		//const uint CONSTANT_BUFFER_SIZE_IN_BYTES = 16 * sizeof(float4);
+    {	
+		const uint CONSTANT_BUFFER_SIZE_IN_BYTES = 16 * sizeof(float4);
+
 		void Simple_Texture::RegisterCases(TestGroup* group)
         {
             group->Description = L"Simple_Texture\n";
@@ -16,20 +17,21 @@ namespace EnablingTests
         }
 
         Simple_Texture::Simple_Texture(Parameters parameters) :
-        parameters(parameters)
-		//constantBufferColor(0.0, 1.0, 0.0, 0.5)
-        {
+        parameters(parameters),
+		constantBufferColor(0.0f, 1.0f, 0.0f, 1.0f)
+        {			
 			SetPreferredRenderTargetFormat(DXGI_FORMAT_R8G8B8A8_UNORM);
 			SetOptimizedClearValueForRenderTargets(float4(1.0f, 1.0f, 1.0f, 1.0f));			
         }
 
         void Simple_Texture::SetupRootSignatures()
         {
-            graphicsRootSignature = Device->GetRootSignatureFactory()				
-				//->AddParameterAsConstantBufferView(0)
+            graphicsRootSignature = Device->GetRootSignatureFactory()								
 				->AddParameterAsDescriptorTable(DescriptorRange(DescriptorRangeType::ShaderResourceView, 1), ShaderVisibility::Pixel)
 				->AddParameterAsDescriptorTable(DescriptorRange(DescriptorRangeType::Sampler, 1), ShaderVisibility::Pixel)
-                ->AllowInputAssemblerInputLayout()
+				//->AddParameterAsDescriptorTable(DescriptorRange(DescriptorRangeType::ConstantBufferView, 1), ShaderVisibility::All)
+				->AddParameterAsConstantBufferView(0)
+		        ->AllowInputAssemblerInputLayout()
                 ->Create();
         }
 
@@ -125,13 +127,6 @@ namespace EnablingTests
 			std::copy(vertices.begin(), vertices.end(), (float4*)map->GetData());
 			map->Unmap();
 			
-			// Upload Contand Data
-			//constantBufferRegion = manager.ReserveSpaceForConstantBuffer(CONSTANT_BUFFER_SIZE_IN_BYTES);
-			//auto constantBufferMapping = constantBufferRegion->GetTypedMapping<float4>();
-			//constantBufferMapping(0) = constantBufferColor;
-			//constantBufferView = ConstantBufferView(uploadHeap, CONSTANT_BUFFER_SIZE_IN_BYTES, constantBufferRegion->GetOffset());
-			
-			
 			// Texture sample using image data			
 			DirectX::ScratchImage image;
 			CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -154,9 +149,8 @@ namespace EnablingTests
 			shaderResourceRegion = manager.ReserveSpaceForTexture(shaderResource);
 			auto shaderResourceMapping = shaderResourceRegion->GetTypedMapping<byte4>();
 			Subresource<byte4> imgView(image);
-			shaderResourceMapping.CopyFrom(imgView);
+			shaderResourceMapping.CopyFrom(imgView);			
 			
-
 			
 			/*
 			// Texture sample using gradient data
@@ -177,8 +171,7 @@ namespace EnablingTests
 			shaderResourceMapping.CopyFrom(texture2DData->Sub(0));
 			*/
 			
-			
-			
+					
 			shaderResourceDescriptorHeap = Device->GetDescriptorHeapFactory()
 				->SetType(DescriptorHeapType::ConstantBufferViewShaderResourceViewUnorderedAccessView)
 				->SetNumberOfDescriptors(1)
@@ -187,7 +180,9 @@ namespace EnablingTests
 
 
 			Device->CreateShaderResourceView(ShaderResourceView().SetResource(shaderResource), shaderResourceDescriptorHeap->GetCPUDescriptorHandle(0));
+			
 
+			
 			// Sampler heap
 			samplerDescriptorHeap = Device->GetDescriptorHeapFactory()
 				->SetType(DescriptorHeapType::Sampler)
@@ -199,6 +194,22 @@ namespace EnablingTests
 				Sampler().SetFilter(FilterType::Linear, FilterType::Linear, FilterType::Linear),
 				samplerDescriptorHeap->GetCPUDescriptorHandle(0));
 			
+			// constant
+			constantBufferRegion = manager.ReserveSpaceForConstantBuffer(CONSTANT_BUFFER_SIZE_IN_BYTES);
+			auto constantBufferMapping = constantBufferRegion->GetTypedMapping<float4>();
+			constantBufferMapping(0) = constantBufferColor;
+			
+			constantBufferDescriptorHeap = Device->GetDescriptorHeapFactory()
+				->SetType(DescriptorHeapType::ConstantBufferViewShaderResourceViewUnorderedAccessView)
+				->SetNumberOfDescriptors(1)
+				->SetShaderVisible()
+				->Create();
+
+			constantBufferView = ConstantBufferView(uploadHeap, CONSTANT_BUFFER_SIZE_IN_BYTES, constantBufferRegion->GetOffset());
+
+			Device->CreateConstantBufferView(
+				constantBufferView,
+				constantBufferDescriptorHeap->GetCPUDescriptorHandle(0));				
 			graphicsCommandList = Device->CreateCommandList(CommandListType::Direct, graphicsCommandAllocator);
 			graphicsCommandList->Close();
 			
@@ -207,6 +218,7 @@ namespace EnablingTests
         void Simple_Texture::RecordFrame(uint frame, uint workerId)
         {
             graphicsCommandList->Reset(graphicsCommandAllocator, graphicsPipelineState);			
+			
 			
 			graphicsCommandList->ResourceBarrier(Barrier::Transition(shaderResource, ResourceState::Common, ResourceState::CopyDestination));
 			graphicsCommandList->GetCopyTextureRegionHelper()
@@ -221,10 +233,8 @@ namespace EnablingTests
 			//broken at next line
 			graphicsCommandList->SetGraphicsRootDescriptorTable(0, shaderResourceDescriptorHeap->GetGPUDescriptorHandle(0));
 			graphicsCommandList->SetGraphicsRootDescriptorTable(1, samplerDescriptorHeap->GetGPUDescriptorHandle(0));
-
+			graphicsCommandList->SetGraphicsRootConstantBufferView(2, constantBufferRegion->GetGPUVirtualAddress());
 			graphicsCommandList->SetVertexBuffer(VertexBufferView(vertexBufferHeap, sizeof(float4), 4 * sizeof(float4)));
-			//graphicsCommandList->SetGraphicsRootConstantBufferView(0, constantBufferView);
-			
 			
 			graphicsCommandList->SetPrimitiveTopology(PrimitiveTopology::Trianglestrip);
 			graphicsCommandList->SetViewport(RenderX(), RenderY());

@@ -1,10 +1,10 @@
 Texture2D<float4> shaderResource;
 SamplerState sampl;
 
-//cbuffer cdata
-//{
-//	float4 data;
-//};
+cbuffer cdata
+{
+	float4 data;
+};
 
 struct VSInput
 {
@@ -40,7 +40,7 @@ struct PSOutput
 PSOutput PSMain(PSInput input)
 {
 	PSOutput output;
-	output.color = shaderResource.Sample(sampl, input.texcoord);
+	output.color = shaderResource.Sample(sampl, input.texcoord) * data;
 	//output.color = data;//float4(1.0, 0.4, 0.2, 1.0);
 	return output;
 }

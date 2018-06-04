@@ -36,7 +36,7 @@ namespace EnablingTests
         private:		
             Parameters parameters;
 			const float4 constantBufferColor;
-
+			
             SF2::D3D12::CommandQueue* defaultCommandQueue;
             SF2::D3D12::CommandAllocator* graphicsCommandAllocator;
             SF2::D3D12::GraphicsCommandList* graphicsCommandList;
